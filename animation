@@ -1,0 +1,109 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Set the window size
+screen_size = (300, 300)
+
+# Create the window
+screen = pygame.display.set_mode(screen_size)
+
+# Set the title of the window
+pygame.display.set_caption('Bouncing Circle')
+
+# Set the background color
+bg_color = (255, 255, 255)
+
+# Ball class definition
+class Ball:
+
+    # Keep track of all balls created
+    all_balls = []
+
+    # Initialize ball with radius and color only. Initial position and velocity are random.
+    def __init__(self, radius, color):
+        self.radius = radius
+        self.mass = radius ** 2
+        self.pos = pygame.math.Vector2(random.randint(radius, screen_size[0] - radius), random.randint(radius, screen_size[0] - radius))
+        self.vel = pygame.math.Vector2(random.randint(-5,5) / 15, random.randint(-5,5) / 15)
+        self.color = color
+
+        Ball.all_balls.append(self)
+
+
+    def description(self):
+        return f"Ball of radius {self.radius}"
+
+    # Update position according to current velocity
+    def update_position(self):
+        self.pos += self.vel
+
+    # Handle wall collisions
+    def check_wall_collision(self):
+        if self.pos[0] - self.radius < 0 or self.pos[0] + self.radius > screen_size[0]:
+            self.vel[0] *= -1
+            
+        if self.pos[1] - self.radius < 0 or self.pos[1] + self.radius > screen_size[1]:
+            self.vel[1] *= -1
+
+    def check_ball_collision(self, ball):
+        if self.pos.distance_to(ball.pos) < self.radius + ball.radius:
+            M = self.mass + ball.mass
+            vdif1 = self.vel - ball.vel
+            vdif2 = ball.vel - self.vel
+            posdif1 = self.pos - ball.pos
+            posdif2 = ball.pos - self.pos
+            
+            u1 = self.vel -  ( ( 2*ball.mass / M ) * ( vdif1.dot(posdif1) ) / posdif1.magnitude_squared() * posdif1 )
+            u2 = ball.vel -  ( ( 2*self.mass / M ) * ( vdif2.dot(posdif2) ) / posdif2.magnitude_squared() * posdif2 )
+            self.vel = u1
+            ball.vel = u2
+                
+            
+
+for i in range(0,5):
+    Ball(random.randint(10,10), (random.randint(0,255),random.randint(0,255),random.randint(0,255)))
+
+
+
+# Run the game loop
+while True:
+    # Handle events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+    
+    # Draw the background
+    screen.fill(bg_color)
+
+    # Draw the circles
+    for ball in Ball.all_balls:
+        
+        ball.update_position()
+        ball.check_wall_collision()
+        for other_ball in Ball.all_balls:
+            if ball != other_ball:
+                ball.check_ball_collision(other_ball)
+                    
+
+        pygame.draw.circle(screen, ball.color, ball.pos, ball.radius)
+
+
+
+
+    """ # Save the circle position
+    if len(circle_path) > 255:
+        circle_path.pop(0)
+    circle_path.append((x, y))
+
+    # Draw previous 255 circles
+    for i in range(len(circle_path)):
+        result = [sum(tup) for tup in zip(circle_color, (255-i,255-i,0))]
+        pygame.draw.circle(screen, result, circle_path[i], radius) """
+
+    # Update the screen
+    pygame.display.flip()
