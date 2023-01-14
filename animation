@@ -1,11 +1,12 @@
 import pygame
+import math
 import random
 
 # Initialize Pygame
 pygame.init()
 
 # Set the window size
-screen_size = (300, 300)
+screen_size = (800, 800)
 
 # Create the window
 screen = pygame.display.set_mode(screen_size)
@@ -23,12 +24,12 @@ class Ball:
     all_balls = []
 
     # Initialize ball with radius and color only. Initial position and velocity are random.
-    def __init__(self, radius, color):
+    def __init__(self, radius):
         self.radius = radius
         self.mass = radius ** 2
         self.pos = pygame.math.Vector2(random.randint(radius, screen_size[0] - radius), random.randint(radius, screen_size[0] - radius))
-        self.vel = pygame.math.Vector2(random.randint(-5,5) / 15, random.randint(-5,5) / 15)
-        self.color = color
+        self.vel = pygame.math.Vector2(random.randint(-5,5)/3, random.randint(-5,5)/3)
+        self.color = (random.randint(0,255), random.randint(0,255), random.randint(0,255))
 
         Ball.all_balls.append(self)
 
@@ -39,17 +40,19 @@ class Ball:
     # Update position according to current velocity
     def update_position(self):
         self.pos += self.vel
-
+        
     # Handle wall collisions
     def check_wall_collision(self):
         if self.pos[0] - self.radius < 0 or self.pos[0] + self.radius > screen_size[0]:
             self.vel[0] *= -1
+                
             
         if self.pos[1] - self.radius < 0 or self.pos[1] + self.radius > screen_size[1]:
             self.vel[1] *= -1
+            
 
     def check_ball_collision(self, ball):
-        if self.pos.distance_to(ball.pos) < self.radius + ball.radius:
+        if ball.pos.distance_to(self.pos) <= (self.radius + ball.radius):
             M = self.mass + ball.mass
             vdif1 = self.vel - ball.vel
             vdif2 = ball.vel - self.vel
@@ -60,16 +63,37 @@ class Ball:
             u2 = ball.vel -  ( ( 2*self.mass / M ) * ( vdif2.dot(posdif2) ) / posdif2.magnitude_squared() * posdif2 )
             self.vel = u1
             ball.vel = u2
+
+
+
+            tangent = math.atan2(posdif1[1], posdif1[0])
+            angle = 0.5 * math.pi + tangent
+
+            self.pos[0] += math.sin(angle)
+            self.pos[1] -= math.cos(angle)
+            ball.pos[0] -= math.sin(angle)
+            ball.pos[1] += math.cos(angle)
+
+    def overlap(self, ball):
+        if ball.pos.distance_to(self.pos) <= self.radius + ball.radius:
+            return True
                 
             
+# Create the balls, checking to make sure they don't spawn on top of one another
+while len(Ball.all_balls) < 100:
+    Ball(random.randint(10,20))
+    for ball in Ball.all_balls:
+        for other_ball in Ball.all_balls:
+            if ball != other_ball and ball.overlap(other_ball):
+                Ball.all_balls.pop()
 
-for i in range(0,5):
-    Ball(random.randint(10,10), (random.randint(0,255),random.randint(0,255),random.randint(0,255)))
 
 
+clock = pygame.time.Clock()
 
 # Run the game loop
 while True:
+    clock.tick(60)
     # Handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -81,13 +105,13 @@ while True:
     screen.fill(bg_color)
 
     # Draw the circles
-    for ball in Ball.all_balls:
-        
+    for i, ball in enumerate(Ball.all_balls):
         ball.update_position()
         ball.check_wall_collision()
-        for other_ball in Ball.all_balls:
-            if ball != other_ball:
-                ball.check_ball_collision(other_ball)
+        for other_ball in Ball.all_balls[i+1:]:
+            ball.check_ball_collision(other_ball)
+                    
+        
                     
 
         pygame.draw.circle(screen, ball.color, ball.pos, ball.radius)
