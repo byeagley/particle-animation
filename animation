@@ -113,6 +113,9 @@ while True:
                     
         
                     
+        ball.update_position()
+        ball.check_wall_collision()
+                    
 
         pygame.draw.circle(screen, ball.color, ball.pos, ball.radius)
 
